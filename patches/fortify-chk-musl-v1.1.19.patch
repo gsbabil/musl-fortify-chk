@@ -1,0 +1,814 @@
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/asprintf_chk.c musl-git/src/fortify/asprintf_chk.c
+--- musl-git.orig/src/fortify/asprintf_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/asprintf_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,13 @@
++#define _GNU_SOURCE
++#include <stdio.h>
++#include <stdarg.h>
++
++int __asprintf_chk(char **s, int flag, const char *fmt, ...)
++{
++	int ret;
++	va_list ap;
++	va_start(ap, fmt);
++	ret = vasprintf(s, fmt, ap);
++	va_end(ap);
++	return ret;
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/chk_fail.c musl-git/src/fortify/chk_fail.c
+--- musl-git.orig/src/fortify/chk_fail.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/chk_fail.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,9 @@
++#include "atomic.h"
++#include "fortify.h"
++
++_Noreturn void __chk_fail(void)
++{
++	a_crash();
++	// make gcc happy
++	abort();
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/confstr_chk.c musl-git/src/fortify/confstr_chk.c
+--- musl-git.orig/src/fortify/confstr_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/confstr_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,8 @@
++#include <unistd.h>
++#include "fortify.h"
++
++size_t __confstr_chk(int name, char *buf, size_t len, size_t buflen)
++{
++	if(buflen < len) __chk_fail();
++	return confstr(name, buf, len);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/fdelt_chk.c musl-git/src/fortify/fdelt_chk.c
+--- musl-git.orig/src/fortify/fdelt_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/fdelt_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,9 @@
++#define _GNU_SOURCE
++#include <sys/select.h>
++#include "fortify.h"
++
++long __fdelt_chk(long d)
++{
++	if(0 < d || d >= FD_SETSIZE) __chk_fail();
++	return d/NFDBITS;
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/fgets_chk.c musl-git/src/fortify/fgets_chk.c
+--- musl-git.orig/src/fortify/fgets_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/fgets_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,10 @@
++#include <stdio.h>
++#include "fortify.h"
++
++char *__fgets_chk(char *restrict s, size_t size, int strsize, FILE *restrict f)
++{
++	if(strsize < size) __chk_fail();
++	return fgets(s, size, f);
++}
++
++weak_alias(__fgets_chk, __fgets_unlocked_chk);
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/fgetws_chk.c musl-git/src/fortify/fgetws_chk.c
+--- musl-git.orig/src/fortify/fgetws_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/fgetws_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,10 @@
++#include <wchar.h>
++#include "fortify.h"
++
++wchar_t *__fgetws_chk(wchar_t *restrict s, size_t size, int strsize, FILE *restrict f)
++{
++	if(strsize < size) __chk_fail();
++	return fgetws(s, size, f);
++}
++
++weak_alias(__fgetws_chk, __fgetws_unlocked_chk);
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/fprintf_chk.c musl-git/src/fortify/fprintf_chk.c
+--- musl-git.orig/src/fortify/fprintf_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/fprintf_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,14 @@
++#include <stdio.h>
++#include <stdarg.h>
++#include "fortify.h"
++
++int __fprintf_chk(FILE *restrict f, int flag, const char *restrict fmt, ...)
++{
++	//FIXME: fortify
++	int ret;
++	va_list ap;
++	va_start(ap, fmt);
++	ret = vfprintf(f, fmt, ap);
++	va_end(ap);
++	return ret;
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/fwprintf_chk.c musl-git/src/fortify/fwprintf_chk.c
+--- musl-git.orig/src/fortify/fwprintf_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/fwprintf_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,14 @@
++#include <wchar.h>
++#include <stdarg.h>
++#include "fortify.h"
++
++int __fwprintf_chk(FILE *restrict f, int flag, const wchar_t *restrict fmt, ...)
++{
++	//FIXME: fortify
++	int ret;
++	va_list ap;
++	va_start(ap, fmt);
++	ret = vfwprintf(f, fmt, ap);
++	va_end(ap);
++	return ret;
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/getcwd_chk.c musl-git/src/fortify/getcwd_chk.c
+--- musl-git.orig/src/fortify/getcwd_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/getcwd_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,8 @@
++#include <unistd.h>
++#include "fortify.h"
++
++char *__getcwd_chk(char *buf, size_t len, size_t buflen)
++{
++	if(buflen < len) __chk_fail();
++	return getcwd(buf, len);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/getgroups_chk.c musl-git/src/fortify/getgroups_chk.c
+--- musl-git.orig/src/fortify/getgroups_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/getgroups_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,8 @@
++#include <unistd.h>
++#include "fortify.h"
++
++int __getgroups_chk(int count, gid_t *list, size_t listlen)
++{
++	if(count*sizeof(gid_t) > listlen) __chk_fail();
++	return getgroups(count, list);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/gethostname_chk.c musl-git/src/fortify/gethostname_chk.c
+--- musl-git.orig/src/fortify/gethostname_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/gethostname_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,8 @@
++#include <unistd.h>
++#include "fortify.h"
++
++int __gethostname_chk(char *name, size_t len, size_t maxlen)
++{
++	if(len > maxlen) __chk_fail();
++	return gethostname(name, len);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/getlogin_r_chk.c musl-git/src/fortify/getlogin_r_chk.c
+--- musl-git.orig/src/fortify/getlogin_r_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/getlogin_r_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,8 @@
++#include <unistd.h>
++#include "fortify.h"
++
++int __getlogin_r_chk(char *name, size_t size, size_t maxlen)
++{
++	if(size < maxlen) __chk_fail();
++	return getlogin_r(name, size);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/longjmp_chk.c musl-git/src/fortify/longjmp_chk.c
+--- musl-git.orig/src/fortify/longjmp_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/longjmp_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,6 @@
++#include <setjmp.h>
++
++void __longjmp_chk(jmp_buf env, int val)
++{
++	return longjmp(env, val);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/mbsnrtowcs_chk.c musl-git/src/fortify/mbsnrtowcs_chk.c
+--- musl-git.orig/src/fortify/mbsnrtowcs_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/mbsnrtowcs_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,8 @@
++#include <wchar.h>
++#include "fortify.h"
++
++size_t __mbsnrtowcs_chk(wchar_t *restrict wcs, const char **restrict src, size_t n, size_t wn, mbstate_t *restrict st, size_t dn)
++{
++	if(dn < wn) __chk_fail();
++	return mbsnrtowcs(wcs, src, n, wn, st);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/mbsrtowcs_chk.c musl-git/src/fortify/mbsrtowcs_chk.c
+--- musl-git.orig/src/fortify/mbsrtowcs_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/mbsrtowcs_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,8 @@
++#include <wchar.h>
++#include "fortify.h"
++
++size_t __mbsrtowcs_chk(wchar_t *restrict ws, const char **restrict src, size_t wn, mbstate_t *restrict st, size_t dn)
++{
++	if(dn < wn) __chk_fail();
++	return mbsrtowcs(ws, src, wn, st);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/mbstowcs_chk.c musl-git/src/fortify/mbstowcs_chk.c
+--- musl-git.orig/src/fortify/mbstowcs_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/mbstowcs_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,8 @@
++#include <wchar.h>
++#include "fortify.h"
++
++size_t __mbstowcs_chk(wchar_t *restrict ws, const char *restrict s, size_t wn, size_t dn)
++{
++	if(dn < wn) __chk_fail();
++	return mbstowcs(ws, s, wn);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/memcpy_chk.c musl-git/src/fortify/memcpy_chk.c
+--- musl-git.orig/src/fortify/memcpy_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/memcpy_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,8 @@
++#include <string.h>
++#include "fortify.h"
++
++void *__memcpy_chk(void *restrict dest, const void *restrict src, size_t n, size_t dn)
++{
++	if(dn < n) __chk_fail();
++	return memcpy(dest, src, n);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/memmove_chk.c musl-git/src/fortify/memmove_chk.c
+--- musl-git.orig/src/fortify/memmove_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/memmove_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,8 @@
++#include <string.h>
++#include "fortify.h"
++
++void *__memmove_chk(void *dest, const void *src, size_t n, size_t dn)
++{
++	if(dn < n) __chk_fail();
++	return memmove(dest, src, n);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/mempcpy_chk.c musl-git/src/fortify/mempcpy_chk.c
+--- musl-git.orig/src/fortify/mempcpy_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/mempcpy_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,9 @@
++#define _GNU_SOURCE
++#include <string.h>
++#include "fortify.h"
++
++void *__mempcpy_chk(void *dest, const void *src, size_t n, size_t dn)
++{
++	if(dn < n) __chk_fail();
++	return mempcpy(dest, src, n);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/memset_chk.c musl-git/src/fortify/memset_chk.c
+--- musl-git.orig/src/fortify/memset_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/memset_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,8 @@
++#include <string.h>
++#include "fortify.h"
++
++void *__memset_chk(void *dest, int c, size_t n, size_t dn)
++{
++	if(dn < n) __chk_fail();
++	return memset(dest, c, n);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/pread_chk.c musl-git/src/fortify/pread_chk.c
+--- musl-git.orig/src/fortify/pread_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/pread_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,10 @@
++#include <unistd.h>
++#include "fortify.h"
++
++ssize_t __pread_chk(int fd, void *buf, size_t size, off_t ofs, size_t bufsize)
++{
++	if(bufsize < size) __chk_fail();
++	return pread(fd, buf, size, ofs);
++}
++
++ssize_t LFS64_2(__pread_chk, __pread64_chk);
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/printf_chk.c musl-git/src/fortify/printf_chk.c
+--- musl-git.orig/src/fortify/printf_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/printf_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,14 @@
++#include <stdio.h>
++#include <stdarg.h>
++#include "fortify.h"
++
++int __printf_chk(int flag, const char *restrict fmt, ...)
++{
++	//FIXME: fortify
++	int ret;
++	va_list ap;
++	va_start(ap, fmt);
++	ret = vfprintf(stdout, fmt, ap);
++	va_end(ap);
++	return ret;
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/read_chk.c musl-git/src/fortify/read_chk.c
+--- musl-git.orig/src/fortify/read_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/read_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,8 @@
++#include <unistd.h>
++#include "fortify.h"
++
++ssize_t __read_chk(int fd, void *buf, size_t count, size_t buflen)
++{
++	if(buflen < count) __chk_fail();
++	return read(fd, buf, count);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/readlink_chk.c musl-git/src/fortify/readlink_chk.c
+--- musl-git.orig/src/fortify/readlink_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/readlink_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,8 @@
++#include <unistd.h>
++#include "fortify.h"
++
++ssize_t __readlink_chk(const char *restrict path, char *restrict buf, size_t size, size_t bufsize)
++{
++	if(bufsize < size) __chk_fail();
++	return readlink(path, buf, size);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/realpath_chk.c musl-git/src/fortify/realpath_chk.c
+--- musl-git.orig/src/fortify/realpath_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/realpath_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,9 @@
++#include <stdlib.h>
++#include <limits.h>
++#include "fortify.h"
++
++char *__realpath_chk(const char *restrict filename, char *restrict resolved, size_t resolved_len)
++{
++	if(resolved_len < PATH_MAX) __chk_fail();
++	return realpath(filename, resolved);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/recv_chk.c musl-git/src/fortify/recv_chk.c
+--- musl-git.orig/src/fortify/recv_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/recv_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,9 @@
++#include <sys/socket.h>
++#include "fortify.h"
++
++ssize_t __recv_chk(int fd, void *buf, size_t len, size_t buflen, int flags)
++{
++	if(buflen < len) __chk_fail();
++	return recv(fd, buf, len, flags);
++}
++
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/recvfrom_chk.c musl-git/src/fortify/recvfrom_chk.c
+--- musl-git.orig/src/fortify/recvfrom_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/recvfrom_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,8 @@
++#include <sys/socket.h>
++#include "fortify.h"
++
++ssize_t __recvfrom_chk(int fd, void *restrict buf, size_t len, size_t buflen, int flags, struct sockaddr *restrict addr, socklen_t *restrict alen)
++{
++	if(buflen < len) __chk_fail();
++	return recvfrom(fd, buf, len, flags, addr, alen);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/snprintf_chk.c musl-git/src/fortify/snprintf_chk.c
+--- musl-git.orig/src/fortify/snprintf_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/snprintf_chk.c	2016-09-18 11:23:15.119998589 -0500
+@@ -0,0 +1,14 @@
++#include <stdio.h>
++#include <stdarg.h>
++#include "fortify.h"
++
++int __snprintf_chk(char *restrict s, size_t n, int flag, size_t sn, const char *restrict fmt, ...)
++{
++	if(sn < n) __chk_fail();
++	int ret;
++	va_list ap;
++	va_start(ap, fmt);
++	ret = vsnprintf(s, n, fmt, ap);
++	va_end(ap);
++	return ret;
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/sprintf_chk.c musl-git/src/fortify/sprintf_chk.c
+--- musl-git.orig/src/fortify/sprintf_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/sprintf_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,14 @@
++#include <stdio.h>
++#include <stdarg.h>
++#include "fortify.h"
++
++int __sprintf_chk(char *restrict s, int flag, size_t sn, const char *restrict fmt, ...)
++{
++	if(sn == 0) __chk_fail();
++	int ret;
++	va_list ap;
++	va_start(ap, fmt);
++	ret = vsprintf(s, fmt, ap);
++	va_end(ap);
++	return ret;
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/stpcpy_chk.c musl-git/src/fortify/stpcpy_chk.c
+--- musl-git.orig/src/fortify/stpcpy_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/stpcpy_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,8 @@
++#include <string.h>
++#include "fortify.h"
++
++char *__stpcpy_chk(char *restrict d, const char *restrict s, size_t dn)
++{
++	if(dn <= strlen(s)) __chk_fail();
++	return stpcpy(d, s);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/stpncpy_chk.c musl-git/src/fortify/stpncpy_chk.c
+--- musl-git.orig/src/fortify/stpncpy_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/stpncpy_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,8 @@
++#include <string.h>
++#include "fortify.h"
++
++char *__stpncpy_chk(char *restrict d, const char *restrict s, size_t n, size_t dn)
++{
++	if(dn < n) __chk_fail();
++	return stpncpy(d, s, n);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/strcat_chk.c musl-git/src/fortify/strcat_chk.c
+--- musl-git.orig/src/fortify/strcat_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/strcat_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,7 @@
++#include <string.h>
++#include "fortify.h"
++
++char *__strcat_chk(char *restrict dest, const char *restrict src, size_t destlen)
++{
++	return strcat(dest, src);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/strcpy_chk.c musl-git/src/fortify/strcpy_chk.c
+--- musl-git.orig/src/fortify/strcpy_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/strcpy_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,8 @@
++#include <string.h>
++#include "fortify.h"
++
++char *__strcpy_chk(char *restrict dest, const char *restrict src, size_t destlen)
++{
++	if(destlen <= strlen(src)) __chk_fail();
++	return strcpy(dest, src);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/strncat_chk.c musl-git/src/fortify/strncat_chk.c
+--- musl-git.orig/src/fortify/strncat_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/strncat_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,8 @@
++#include <string.h>
++#include "fortify.h"
++
++char *__strncat_chk(char *restrict d, const char *restrict s, size_t n, size_t dn)
++{
++	if(dn < n) __chk_fail();
++	return strncat(d, s, n);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/strncpy_chk.c musl-git/src/fortify/strncpy_chk.c
+--- musl-git.orig/src/fortify/strncpy_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/strncpy_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,8 @@
++#include <string.h>
++#include "fortify.h"
++
++char *__strncpy_chk(char *restrict d, const char *restrict s, size_t n, size_t dn)
++{
++	if(dn < n) __chk_fail();
++	return strncpy(d, s, n);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/swprintf_chk.c musl-git/src/fortify/swprintf_chk.c
+--- musl-git.orig/src/fortify/swprintf_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/swprintf_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,14 @@
++#include <stdarg.h>
++#include <wchar.h>
++#include "fortify.h"
++
++int __swprintf_chk(wchar_t *restrict s, size_t n, int flag, size_t sn, const wchar_t *restrict fmt, ...)
++{
++	if(sn < n) __chk_fail();
++	int ret;
++	va_list ap;
++	va_start(ap, fmt);
++	ret = vswprintf(s, n, fmt, ap);
++	va_end(ap);
++	return ret;
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/syslog_chk.c musl-git/src/fortify/syslog_chk.c
+--- musl-git.orig/src/fortify/syslog_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/syslog_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,13 @@
++#include <stdarg.h>
++#include <syslog.h>
++#include "fortify.h"
++
++void __vsyslog(int, const char *, va_list);
++
++void __syslog_chk(int priority, int flag, const char *message, ...)
++{
++	va_list ap;
++	va_start(ap, message);
++	__vsyslog(priority, message, ap);
++	va_end(ap);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/ttyname_r_chk.c musl-git/src/fortify/ttyname_r_chk.c
+--- musl-git.orig/src/fortify/ttyname_r_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/ttyname_r_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,8 @@
++#include <unistd.h>
++#include "fortify.h"
++
++int __ttyname_r_chk(int fd, char *name, size_t size, size_t nsize)
++{
++	if(nsize < size) __chk_fail();
++	return ttyname_r(fd, name, size);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/vasprintf_chk.c musl-git/src/fortify/vasprintf_chk.c
+--- musl-git.orig/src/fortify/vasprintf_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/vasprintf_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,8 @@
++#define _GNU_SOURCE
++#include <stdio.h>
++#include <stdarg.h>
++
++int __vasprintf_chk(char **s, int flag, const char *fmt, va_list ap)
++{
++	return vasprintf(s, fmt, ap);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/vfprintf_chk.c musl-git/src/fortify/vfprintf_chk.c
+--- musl-git.orig/src/fortify/vfprintf_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/vfprintf_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,8 @@
++#include <stdio.h>
++#include <stdarg.h>
++#include "fortify.h"
++
++int __vfprintf_chk(FILE *restrict f, int flag, const char *restrict fmt, va_list ap)
++{
++	return vfprintf(f, fmt, ap);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/vfwprintf_chk.c musl-git/src/fortify/vfwprintf_chk.c
+--- musl-git.orig/src/fortify/vfwprintf_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/vfwprintf_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,8 @@
++#include <stdarg.h>
++#include <wchar.h>
++#include "fortify.h"
++
++int __vfwprintf_chk(FILE *restrict f, int flag, const wchar_t *restrict fmt, va_list ap)
++{
++	return vfwprintf(f, fmt, ap);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/vprintf_chk.c musl-git/src/fortify/vprintf_chk.c
+--- musl-git.orig/src/fortify/vprintf_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/vprintf_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,7 @@
++#include <stdio.h>
++#include <stdarg.h>
++#include "fortify.h"
++
++int __vprintf_chk(int flag, const char *restrict fmt, va_list ap) {
++	return vprintf(fmt, ap);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/vsnprintf_chk.c musl-git/src/fortify/vsnprintf_chk.c
+--- musl-git.orig/src/fortify/vsnprintf_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/vsnprintf_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,9 @@
++#include <stdio.h>
++#include <stdarg.h>
++#include "fortify.h"
++
++int __vsnprintf_chk(char *restrict s, size_t n, int flag, size_t sn, const char *restrict fmt, va_list ap)
++{
++	if(sn < n) __chk_fail();
++	return vsnprintf(s, n, fmt, ap);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/vsprintf_chk.c musl-git/src/fortify/vsprintf_chk.c
+--- musl-git.orig/src/fortify/vsprintf_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/vsprintf_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,7 @@
++#include <stdio.h>
++#include <stdarg.h>
++#include "fortify.h"
++
++int __vsprintf_chk(char *restrict s, int flag, size_t sn, const char *restrict fmt, va_list ap) {
++  return vsprintf(s, fmt, ap);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/vswprintf_chk.c musl-git/src/fortify/vswprintf_chk.c
+--- musl-git.orig/src/fortify/vswprintf_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/vswprintf_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,9 @@
++#include <stdarg.h>
++#include <wchar.h>
++#include "fortify.h"
++
++int __vswprintf_chk(wchar_t *restrict s, size_t n, int flag, size_t sn, const wchar_t *restrict fmt, va_list ap)
++{
++	if(sn < n) __chk_fail();
++	return vswprintf(s, n, fmt, ap);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/vsyslog_chk.c musl-git/src/fortify/vsyslog_chk.c
+--- musl-git.orig/src/fortify/vsyslog_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/vsyslog_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,10 @@
++#include <stdarg.h>
++#include <syslog.h>
++#include "fortify.h"
++
++void __vsyslog(int, const char *, va_list);
++
++void __vsyslog_chk(int priority, int flag, const char *message, va_list ap)
++{
++	return __vsyslog(priority, message, ap);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/vwprintf_chk.c musl-git/src/fortify/vwprintf_chk.c
+--- musl-git.orig/src/fortify/vwprintf_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/vwprintf_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,8 @@
++#include <stdarg.h>
++#include <wchar.h>
++#include "fortify.h"
++
++int __vwprintf_chk(int flag, const wchar_t *restrict fmt, va_list ap)
++{
++	return vwprintf(fmt, ap);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/wcpcpy_chk.c musl-git/src/fortify/wcpcpy_chk.c
+--- musl-git.orig/src/fortify/wcpcpy_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/wcpcpy_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,7 @@
++#include <wchar.h>
++#include "fortify.h"
++
++wchar_t *__wcpcpy_chk(wchar_t *restrict d, const wchar_t *restrict s, size_t dn)
++{
++  return wcpcpy(d, s);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/wcpncpy_chk.c musl-git/src/fortify/wcpncpy_chk.c
+--- musl-git.orig/src/fortify/wcpncpy_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/wcpncpy_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,8 @@
++#include <wchar.h>
++#include "fortify.h"
++
++wchar_t *__wcpncpy_chk(wchar_t *restrict d, const wchar_t *restrict s, size_t n, size_t dn)
++{
++	if(dn < n) __chk_fail();
++	return wcpncpy(d, s, n);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/wcrtomb_chk.c musl-git/src/fortify/wcrtomb_chk.c
+--- musl-git.orig/src/fortify/wcrtomb_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/wcrtomb_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,9 @@
++#include <wchar.h>
++#include "locale_impl.h"
++#include "fortify.h"
++
++size_t __wcrtomb_chk(char *restrict s, wchar_t wc, mbstate_t *restrict st, size_t bn)
++{
++	if(bn < MB_CUR_MAX) __chk_fail();
++	return wcrtomb(s, wc, st);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/wcscat_chk.c musl-git/src/fortify/wcscat_chk.c
+--- musl-git.orig/src/fortify/wcscat_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/wcscat_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,6 @@
++#include <wchar.h>
++#include "fortify.h"
++
++wchar_t *__wcscat_chk(wchar_t *restrict dest, const wchar_t *restrict src, size_t destlen) {
++	return wcscat(dest, src);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/wcscpy_chk.c musl-git/src/fortify/wcscpy_chk.c
+--- musl-git.orig/src/fortify/wcscpy_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/wcscpy_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,7 @@
++#include <wchar.h>
++#include "fortify.h"
++
++wchar_t *__wcscpy_chk(wchar_t *restrict d, const wchar_t *restrict s, size_t dn)
++{
++  return wcscpy(d, s);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/wcsncat_chk.c musl-git/src/fortify/wcsncat_chk.c
+--- musl-git.orig/src/fortify/wcsncat_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/wcsncat_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,8 @@
++#include <wchar.h>
++#include "fortify.h"
++
++wchar_t *__wcsncat_chk(wchar_t *restrict d, const wchar_t *restrict s, size_t n, size_t dn)
++{
++	if(dn < n) __chk_fail();
++	return wcsncat(d, s, n);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/wcsncpy_chk.c musl-git/src/fortify/wcsncpy_chk.c
+--- musl-git.orig/src/fortify/wcsncpy_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/wcsncpy_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,8 @@
++#include <wchar.h>
++#include "fortify.h"
++
++wchar_t *__wcsncpy_chk(wchar_t *restrict d, const wchar_t *restrict s, size_t n, size_t dn)
++{
++	if(dn < n) __chk_fail();
++	return wcsncpy(d, s, n);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/wcsnrtombs_chk.c musl-git/src/fortify/wcsnrtombs_chk.c
+--- musl-git.orig/src/fortify/wcsnrtombs_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/wcsnrtombs_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,8 @@
++#include <wchar.h>
++#include "fortify.h"
++
++size_t __wcsnrtombs_chk(char *restrict dst, const wchar_t **restrict wcs, size_t wn, size_t n, mbstate_t *restrict st, size_t dn)
++{
++	if(dn < n) __chk_fail();
++	return wcsnrtombs(dst, wcs, wn, n, st);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/wcsrtombs_chk.c musl-git/src/fortify/wcsrtombs_chk.c
+--- musl-git.orig/src/fortify/wcsrtombs_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/wcsrtombs_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,8 @@
++#include <wchar.h>
++#include "fortify.h"
++
++size_t __wcsrtombs_chk(char *restrict s, const wchar_t **restrict ws, size_t n, mbstate_t *restrict st, size_t dn)
++{
++	if(dn < n) __chk_fail();
++	return wcsrtombs(s, ws, n, st);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/wcstombs_chk.c musl-git/src/fortify/wcstombs_chk.c
+--- musl-git.orig/src/fortify/wcstombs_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/wcstombs_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,8 @@
++#include <stdlib.h>
++#include "fortify.h"
++
++size_t __wcstombs_chk(char *restrict s, const wchar_t *restrict ws, size_t n, size_t dn)
++{
++	if(dn < n) __chk_fail();
++	return wcstombs(s, ws, n);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/wctomb_chk.c musl-git/src/fortify/wctomb_chk.c
+--- musl-git.orig/src/fortify/wctomb_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/wctomb_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,9 @@
++#include <stdlib.h>
++#include "locale_impl.h"
++#include "fortify.h"
++
++int __wctomb_chk(char *s, wchar_t wc, size_t sn)
++{
++	if(sn < MB_CUR_MAX) __chk_fail();
++	return wctomb(s, wc);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/wmemcpy_chk.c musl-git/src/fortify/wmemcpy_chk.c
+--- musl-git.orig/src/fortify/wmemcpy_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/wmemcpy_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,8 @@
++#include <wchar.h>
++#include "fortify.h"
++
++wchar_t *__wmemcpy_chk(wchar_t *restrict d, const wchar_t *restrict s, size_t n, size_t dn)
++{
++	if(dn < n) __chk_fail();
++	return wmemcpy(d, s, n);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/wmemmove_chk.c musl-git/src/fortify/wmemmove_chk.c
+--- musl-git.orig/src/fortify/wmemmove_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/wmemmove_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,8 @@
++#include <wchar.h>
++#include "fortify.h"
++
++wchar_t *__wmemmove_chk(wchar_t *d, const wchar_t *s, size_t n, size_t dn)
++{
++	if(dn < n) __chk_fail();
++	return wmemmove(d, s, n);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/wmemset_chk.c musl-git/src/fortify/wmemset_chk.c
+--- musl-git.orig/src/fortify/wmemset_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/wmemset_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,8 @@
++#include <wchar.h>
++#include "fortify.h"
++
++wchar_t *__wmemset_chk(wchar_t *d, wchar_t c, size_t n, size_t dn)
++{
++	if(dn < n) __chk_fail();
++	return wmemset(d, c, n);
++}
+diff -u --exclude .git -uprN musl-git.orig/src/fortify/wprintf_chk.c musl-git/src/fortify/wprintf_chk.c
+--- musl-git.orig/src/fortify/wprintf_chk.c	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/fortify/wprintf_chk.c	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,13 @@
++#include <stdio.h>
++#include <stdarg.h>
++#include <wchar.h>
++
++int __wprintf_chk(int flag, const wchar_t *restrict fmt, ...)
++{
++	int ret;
++	va_list ap;
++	va_start(ap, fmt);
++	ret = vwprintf(fmt, ap);
++	va_end(ap);
++	return ret;
++}
+diff -u --exclude .git -uprN musl-git.orig/src/internal/fortify.h musl-git/src/internal/fortify.h
+--- musl-git.orig/src/internal/fortify.h	1969-12-31 18:00:00.000000000 -0600
++++ musl-git/src/internal/fortify.h	2016-09-18 11:23:15.129998589 -0500
+@@ -0,0 +1,5 @@
++#include "libc.h"
++
++_Noreturn void __chk_fail(void);
++
++void __vsyslog(int, const char *, va_list);
+
+
